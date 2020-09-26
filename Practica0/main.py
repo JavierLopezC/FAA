@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+# coding: utf-8
 from datos import Datos
 
 

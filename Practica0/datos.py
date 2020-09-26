@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+# coding: utf-8
 import pandas as pd
 import numpy as np
 
@@ -9,18 +12,21 @@ class Datos:
         columns = data.columns
         nominalAtributos = []
         diccionario = {}
-        for i in range(0, len(columns)-1):
-            values = data[columns[i]].unique()
-            nominalAtributos.append(False)
-            for value in values:
-                if not value.isNumeric():
-                    if value.isalnum():
-                        nominalAtributos[i] = True
-                        break
-                    else:
+        for i in range(0, len(columns)):
+            values = data[columns[i]]
+            if np.issubdtype(values.dtype, np.integer) or np.issubdtype(values.dtype, np.floating):
+                nominalAtributos.append(False)
+            elif values.dtype == object:
+                for value in values:
+                    if not isinstance(value, str):
                         raise ValueError("Valor no numerico ni nominal.")
+                nominalAtributos.append(True)
+            else:
+                raise ValueError("Valor no numerico ni nominal.")
+                        
             if nominalAtributos[i] is True:
-                values = values.sort()
+                values = pd.unique(values)
+                values.sort()
                 j = 0
                 dic = {}
                 for value in values:
@@ -29,7 +35,7 @@ class Datos:
             else:
                 dic = {}
             diccionario[columns[i]] = dic
-        self.datos = data.replace(to_replace=diccionario).to_numpy()
+        self.datos = data.replace(to_replace=diccionario).values
         self.nominalAtributos = nominalAtributos
         self.diccionario = diccionario
         

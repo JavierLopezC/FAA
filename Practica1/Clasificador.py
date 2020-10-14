@@ -31,7 +31,7 @@ class Clasificador:
         # Aqui se compara la prediccion (pred) con las clases reales y se calcula el error
         err = 0
         for i in range(0, len(datos)):
-            if datos[i][len(datos) - 1] != pred[i]:
+            if datos[i][len(datos[i]) - 1] != pred[i]:
                 err += 1
         err /= len(datos)
         print("Error de " + err + ".")

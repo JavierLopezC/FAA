@@ -25,19 +25,19 @@ class Clasificador:
     def clasifica(self, datosTest, atributosDiscretos, diccionario):
         pass
     
+    @staticmethod
     # Obtiene el numero de aciertos y errores para calcular la tasa de fallo
     # TODO: implementar
-    def error(self, datos, pred):
+    def error(datos, pred):
         # Aqui se compara la prediccion (pred) con las clases reales y se calcula el error
         err = 0
         for i in range(0, len(datos)):
             if datos[i][len(datos[i]) - 1] != pred[i]:
                 err += 1
         err /= len(datos)
-        print("Error de " + err + ".")
+        print("Error de " + str(err) + ".")
         return err
         
-    
     # Realiza una clasificacion utilizando una estrategia de particionado determinada
     # TODO: implementar esta funcion
     def validacion(self, particionado, dataset, clasificador, seed=None):
@@ -61,11 +61,11 @@ class Clasificador:
         # de veces, obteniendo en cada una un error. Finalmente se calcularía la media.
         elif isinstance(particionado, ValidacionSimple):
             clasificador.entrenamiento(dataset.extraerDatos(particiones[0].indicesTrain),
-                                              dataset.nominalAtributos, dataset.diccionario)
+                                       dataset.nominalAtributos, dataset.diccionario)
 
             pred = clasificador.clasifica(dataset.extraerDatos(particiones[0].indicesTest))
             error = self.error(dataset.extraerDatos(particiones[0].indicesTest), pred)
-            print("Error: " + error)
+            print("Error: " + str(error))
             
         else:
             raise ValueError("Particionado no válido.")

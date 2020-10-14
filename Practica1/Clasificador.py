@@ -29,7 +29,14 @@ class Clasificador:
     # TODO: implementar
     def error(self, datos, pred):
         # Aqui se compara la prediccion (pred) con las clases reales y se calcula el error
-        pass
+        err = 0
+        for i in range(0, len(datos)):
+            if datos[i][len(datos) - 1] != pred[i]:
+                err += 1
+        err /= len(datos)
+        print("Error de " + err + ".")
+        return err
+        
     
     # Realiza una clasificacion utilizando una estrategia de particionado determinada
     # TODO: implementar esta funcion
@@ -41,8 +48,10 @@ class Clasificador:
         if isinstance(particionado, ValidacionCruzada):
             i = 0
             for particion in particiones:
-                pred = clasificador.entrenamiento(dataset.extraerDatos(particion.indicesTrain),
-                                                  dataset.nominalAtributos, dataset.diccionario)
+                clasificador.entrenamiento(dataset.extraerDatos(particion.indicesTrain),
+                                           dataset.nominalAtributos, dataset.diccionario)
+                pred = clasificador.clasifica(dataset.extraerDatos(particion.indicesTest),
+                                              dataset.nominalAtributos, dataset.diccionario)
                 error = self.error(dataset.extraerDatos(particion.indicesTest), pred)
                 print("Error en partición " + i + ": " + error)
                 i = i + 1
@@ -51,8 +60,10 @@ class Clasificador:
         # y obtenemos el error en la particion test. Otra opción es repetir la validación simple un número especificado
         # de veces, obteniendo en cada una un error. Finalmente se calcularía la media.
         elif isinstance(particionado, ValidacionSimple):
-            pred = clasificador.entrenamiento(dataset.extraerDatos(particionparticiones[0].indicesTrain),
+            clasificador.entrenamiento(dataset.extraerDatos(particiones[0].indicesTrain),
                                               dataset.nominalAtributos, dataset.diccionario)
+
+            pred = clasificador.clasifica(dataset.extraerDatos(particiones[0].indicesTest))
             error = self.error(dataset.extraerDatos(particiones[0].indicesTest), pred)
             print("Error: " + error)
             

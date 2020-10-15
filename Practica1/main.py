@@ -2,6 +2,8 @@
 
 # coding: utf-8
 from Datos import Datos
+from Clasificador import Clasificador, ClasificadorNaiveBayes
+from EstrategiaParticionado import ValidacionSimple, ValidacionCruzada
 
 
 def main():
@@ -16,8 +18,13 @@ def main():
     print("\nDatos:")
     print(tictac.datos)
     
-    print("\n Datos 0, 2, 6, 10:")
-    print(tictac.extraeDatos([0, 2, 6, 10]))
+    nb = ClasificadorNaiveBayes()
+    vs = ValidacionSimple()
+    Clasificador.validacion(vs, tictac, nb)
+    
+    nb = ClasificadorNaiveBayes()
+    vc = ValidacionCruzada()
+    Clasificador.validacion(vc, tictac, nb)
     
     print("\n")
 
@@ -29,8 +36,13 @@ def main():
     print("\nDatos:")
     print(german.datos)
 
-    print("\n Datos 5, 9, 2, 1:")
-    print(german.extraeDatos([5, 9, 2, 1]))
+    nb = ClasificadorNaiveBayes()
+    vs = ValidacionSimple()
+    Clasificador.validacion(vs, german, nb)
+    
+    nb = ClasificadorNaiveBayes()
+    vc = ValidacionCruzada()
+    Clasificador.validacion(vc, german, nb)
     
     
 if __name__ == '__main__':

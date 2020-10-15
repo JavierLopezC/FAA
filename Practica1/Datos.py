@@ -9,12 +9,15 @@ class Datos:
     # TODO: procesar el fichero para asignar correctamente las variables nominalAtributos, datos y diccionario
     def __init__(self, nombreFichero):
         data = pd.read_csv(nombreFichero, header=0)
+        data["Class"] = data["Class"].astype(str)
         columns = data.columns
         nominalAtributos = []
         diccionario = {}
         for i in range(0, len(columns)):
             values = data[columns[i]]
-            if np.issubdtype(values.dtype, np.integer) or np.issubdtype(values.dtype, np.floating):
+            if i == (len(columns) - 1):
+                nominalAtributos.append(True)
+            elif np.issubdtype(values.dtype, np.integer) or np.issubdtype(values.dtype, np.floating):
                 nominalAtributos.append(False)
             elif values.dtype == object:
                 for value in values:

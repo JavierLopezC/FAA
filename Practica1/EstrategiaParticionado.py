@@ -1,14 +1,15 @@
-from abc import ABCMeta,abstractmethod
+from abc import ABCMeta, abstractmethod
 import math
 import random
 
 
-class Particion():
+class Particion:
 
-  # Esta clase mantiene la lista de �ndices de Train y Test para cada partici�n del conjunto de particiones
-  def __init__(self):
-    self.indicesTrain=[]
-    self.indicesTest=[]
+    # Esta clase mantiene la lista de índices de Train y Test para cada partición del conjunto de particiones
+    def __init__(self):
+        self.indicesTrain = []
+        self.indicesTest = []
+
 
 #####################################################################################################
 class EstrategiaParticionado:
@@ -32,7 +33,8 @@ class ValidacionSimple(EstrategiaParticionado):
         self.proporcionTest = propTest
         self.particiones = []
 
-    # Crea particiones segun el metodo tradicional de division de los datos segun el porcentaje deseado y el n�mero de ejecuciones deseado
+    # Crea particiones segun el metodo tradicional de division de los datos segun el porcentaje deseado y el n�mero de
+    # ejecuciones deseado
     # Devuelve una lista de particiones (clase Particion)
     # TODO: implementar
 
@@ -41,14 +43,14 @@ class ValidacionSimple(EstrategiaParticionado):
         nRows = datos.shape[0]
         particion = Particion()
 
-        #crea lista de indices del tamaño de datos y realiza la permutación aleatoria
+        # Crea lista de indices del tamaño de datos y realiza la permutación aleatoria
         indexes = list(range(0, nRows))
         random.shuffle(indexes)
 
-        #crea la particion donde corresponde segun especifica la proporcion de test
+        # Crea la particion donde corresponde segun especifica la proporcion de test
         numTrain = int(math.ceil(nRows * self.proporcionTest))
         particion.indicesTrain = indexes[0: numTrain]
-        particion.indicesTest = indexes[numTrain + 1:]
+        particion.indicesTest = indexes[numTrain:]
 
         # print("\VALIDACION SIMPLE:\n")
         # print("\nTRAIN:\n")

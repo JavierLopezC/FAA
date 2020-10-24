@@ -71,6 +71,7 @@ class Clasificador:
             print("\n")
             print("Error total sin corrección de Laplace: " + str(totalErr))
             print("Error total con corrección de Laplace: " + str(totalErr_lap))
+            return totalErr, totalErr_lap
                 
         # - Para validacion simple (hold-out): entrenamos el clasificador con la particion de train
         # y obtenemos el error en la particion test. Otra opción es repetir la validación simple un número especificado
@@ -82,9 +83,8 @@ class Clasificador:
             pred = clasificador.clasifica(dataset.extraeDatos(particiones[0].indicesTest), dataset.nominalAtributos,
                                           dataset.diccionario)
             error = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[0])
-            print("Error sin correccciín de Laplace: " + str(error))
-            error = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[1])
-            print("Error con correccciín de Laplace: " + str(error))
+            error_lap = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[1])
+            return error, error_lap
             
         else:
             raise ValueError("Particionado no válido.")
@@ -111,25 +111,22 @@ class ClasificadorNaiveBayes(Clasificador):
             laplace_tot += cols
             if cols > columnas:
                 columnas = cols
-        fila = []
-        for i in range(0, columnas):
-            fila.append(0)
-        frecuencias = []
-        for i in range(0, len(atributosDiscretos) - 1):
-            frecuencias.append(fila)
-        for i in range(0, clases):
-            self.clase_tabla.append(frecuencias)
-            self.clase_probs.append(0)
 
-        fila = []
-        for i in range(0, columnas):
-            fila.append(1)
-        frecuencias = []
-        for i in range(0, len(atributosDiscretos) - 1):
-            frecuencias.append(fila)
         for i in range(0, clases):
-            self.clase_tabla_lap.append(frecuencias)
-        
+            self.clase_tabla.append([])
+            self.clase_probs.append(0)
+            for j in range(0, len(atributosDiscretos) - 1):
+                self.clase_tabla[i].append([])
+                for k in range(0, columnas):
+                    self.clase_tabla[i][j].append(0)
+
+        for i in range(0, clases):
+            self.clase_tabla_lap.append([])
+            for j in range(0, len(atributosDiscretos) - 1):
+                self.clase_tabla_lap[i].append([])
+                for k in range(0, columnas):
+                    self.clase_tabla_lap[i][j].append(1)
+
         for dato in datostrain:
             self.clase_probs[dato[len(atributosDiscretos) - 1]] += 1
             for i in range(0, len(atributosDiscretos) - 1):
@@ -141,7 +138,7 @@ class ClasificadorNaiveBayes(Clasificador):
                     self.clase_tabla[dato[len(atributosDiscretos) - 1]][i][1] += 1
                 else:
                     raise ValueError("atributosDiscretos no válido.")
-        
+
         self.clase_probs_lap = self.clase_probs[:]
         for prob in self.clase_probs_lap:
             prob += laplace_tot
@@ -156,10 +153,14 @@ class ClasificadorNaiveBayes(Clasificador):
                 raise ValueError("atributosDiscretos no válido.")
             for j in range(0, len(self.clase_tabla[i])):
                 if atributosDiscretos[j] is True:
+                    k = 0
                     for data in self.clase_tabla[i][j]:
-                        data /= total
+                        self.clase_tabla[i][j][k] /= total
+                        k += 1
+                    k = 0
                     for data_lap in self.clase_tabla_lap[i][j]:
-                        data_lap /= (total + laplace_tot)
+                        self.clase_tabla_lap[i][j][k] /= (total + laplace_tot)
+                        k += 1
                 elif atributosDiscretos[j] is False:
                     self.clase_tabla[i][j][0] /= self.clase_tabla[i][j][1]
                 else:
@@ -211,5 +212,5 @@ class ClasificadorNaiveBayes(Clasificador):
                     clase_lap = i
             pred.append(clase)
             pred_lap.append(clase_lap)
-        print(isinstance(ret, np.ndarray))
+        ret = np.asarray([pred,pred_lap])
         return ret

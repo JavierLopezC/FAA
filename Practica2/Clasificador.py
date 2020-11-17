@@ -6,7 +6,7 @@ from EstrategiaParticionado import ValidacionSimple, ValidacionCruzada
 from Datos import Datos
 from math import sqrt, exp
 from scipy.stats import norm
-from scipy.spacial.distance import mahalanobis
+from scipy.spatial.distance import mahalanobis
 import numpy as np
 from collections import Counter
 
@@ -47,45 +47,49 @@ class Clasificador:
     # TODO: implementar esta funcion
     def validacion(particionado, dataset, clasificador, seed=None):
         # Creamos las particiones siguiendo la estrategia llamando a particionado.creaParticiones
-        particionado.creaParticiones(dataset.datos, seed=seed)
+        if isinstance(particionado, ValidacionSimple):
+            for i in range(0, 100):
+                particionado.creaParticiones(dataset.datos, seed=seed)
+        elif isinstance(particionado, ValidacionCruzada):
+            particionado.creaParticiones(dataset.datos, seed=seed)
         particiones = particionado.particiones
         # - Para validacion cruzada: en el bucle hasta nv entrenamos el clasificador con la particion de train i
         # y obtenemos el error en la particion de test i
-        if isinstance(particionado, ValidacionCruzada):
-            i = 0
-            totalErr = 0
-            totalErr_lap = 0
-            for particion in particiones:
-                clasificador.entrenamiento(dataset.extraeDatos(particion.indicesTrain),
-                                           dataset.nominalAtributos, dataset.diccionario)
-                pred = clasificador.clasifica(dataset.extraeDatos(particion.indicesTest),
-                                              dataset.nominalAtributos, dataset.diccionario)
-                error = Clasificador.error(dataset.extraeDatos(particion.indicesTest), pred[0])
-                print("Error en partición " + str(i) + " sin Laplace: " + str(error))
-                error_lap = Clasificador.error(dataset.extraeDatos(particion.indicesTest), pred[1])
-                print("Error en partición " + str(i) + " con Laplace: " + str(error_lap))
-                totalErr += error
-                totalErr_lap += error_lap
-                i += 1
-            totalErr /= i
-            totalErr_lap /= i
-            return totalErr, totalErr_lap
+        i = 0
+        totalErr = []
+        for particion in particiones:
+            error = []
+            clasificador.entrenamiento(dataset.extraeDatos(particion.indicesTrain),
+                                       dataset.nominalAtributos, dataset.diccionario)
+            pred = clasificador.clasifica(dataset.extraeDatos(particion.indicesTest),
+                                          dataset.nominalAtributos, dataset.diccionario)
+            for prediction in pred:
+                error.append(Clasificador.error(dataset.extraeDatos(particion.indicesTest), prediction))
+            print("Error en partición " + str(i) + str(error))
+            if len(totalErr) == 0:
+                totalErr = error[:]
+            else:
+                for j in range(0, len(totalErr)):
+                    totalErr[j] += error[j]
+            i += 1
+        for j in range(0, len(totalErr)):
+            totalErr[j] /= i
+        return totalErr
                 
         # - Para validacion simple (hold-out): entrenamos el clasificador con la particion de train
         # y obtenemos el error en la particion test. Otra opción es repetir la validación simple un número especificado
         # de veces, obteniendo en cada una un error. Finalmente se calcularía la media.
-        elif isinstance(particionado, ValidacionSimple):
-            clasificador.entrenamiento(dataset.extraeDatos(particiones[0].indicesTrain),
-                                       dataset.nominalAtributos, dataset.diccionario)
-
-            pred = clasificador.clasifica(dataset.extraeDatos(particiones[0].indicesTest), dataset.nominalAtributos,
-                                          dataset.diccionario)
-            error = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[0])
-            error_lap = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[1])
-            return error, error_lap
-            
-        else:
-            raise ValueError("Particionado no válido.")
+        
+        #elif isinstance(particionado, ValidacionSimple):
+        #    clasificador.entrenamiento(dataset.extraeDatos(particiones[0].indicesTrain),
+        #                               dataset.nominalAtributos, dataset.diccionario)
+        #    pred = clasificador.clasifica(dataset.extraeDatos(particiones[0].indicesTest), dataset.nominalAtributos,
+        #                                  dataset.diccionario)
+        #    error = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[0])
+        #    error_lap = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[1])
+        #    return error, error_lap
+        #else:
+        #    raise ValueError("Particionado no válido.")
      
         
 ########################################################################################################################
@@ -126,14 +130,14 @@ class ClasificadorNaiveBayes(Clasificador):
                     self.clase_tabla_lap[i][j].append(1)
 
         for dato in datostrain:
-            self.clase_probs[dato[len(atributosDiscretos) - 1]] += 1
+            self.clase_probs[int(dato[len(atributosDiscretos) - 1])] += 1
             for i in range(0, len(atributosDiscretos) - 1):
                 if atributosDiscretos[i] is True:
-                    self.clase_tabla[dato[len(atributosDiscretos) - 1]][i][dato[i]] += 1
-                    self.clase_tabla_lap[dato[len(atributosDiscretos) - 1]][i][dato[i]] += 1
+                    self.clase_tabla[int(dato[len(atributosDiscretos) - 1])][i][dato[i]] += 1
+                    self.clase_tabla_lap[int(dato[len(atributosDiscretos) - 1])][i][dato[i]] += 1
                 elif atributosDiscretos[i] is False:
-                    self.clase_tabla[dato[len(atributosDiscretos) - 1]][i][0] += dato[i]
-                    self.clase_tabla[dato[len(atributosDiscretos) - 1]][i][1] += 1
+                    self.clase_tabla[int(dato[len(atributosDiscretos) - 1])][i][0] += dato[i]
+                    self.clase_tabla[int(dato[len(atributosDiscretos) - 1])][i][1] += 1
                 else:
                     raise ValueError("atributosDiscretos no válido.")
 
@@ -169,9 +173,9 @@ class ClasificadorNaiveBayes(Clasificador):
                 if atributosDiscretos[i] is True:
                     continue
                 elif atributosDiscretos[i] is False:
-                    self.clase_tabla[dato[len(atributosDiscretos) - 1]][i][2] += \
-                        (((dato[i] - self.clase_tabla[dato[len(atributosDiscretos) - 1]][i][0]) ** 2) /
-                         self.clase_tabla[dato[len(atributosDiscretos) - 1]][i][1])
+                    self.clase_tabla[int(dato[len(atributosDiscretos) - 1])][i][2] += \
+                        (((dato[i] - self.clase_tabla[int(dato[len(atributosDiscretos) - 1])][i][0]) ** 2) /
+                         self.clase_tabla[int(dato[len(atributosDiscretos) - 1])][i][1])
                 else:
                     raise ValueError("atributosDiscretos no válido.")
         for i in range(0, clases):
@@ -232,15 +236,16 @@ class ClasificadorVecinosProximos(Clasificador):
                 if nominalAtributos[i] is False:
                     media[j] += dato[i]
                     j += 1
-        media /= len(datos)
+        for i in range(0, len(media)):
+            media[i] /= len(datos)
         for dato in datos:
             j = 0
             for i in range(0, len(nominalAtributos) - 1):
                 if nominalAtributos[i] is False:
                     desv[j] += (dato[i] - media[j]) ** 2
                     j += 1
-        desv /= len(datos)
         for i in range(0, len(desv)):
+            desv[i] /= len(datos)
             desv[i] = sqrt(desv[i])
         return media, desv
         
@@ -255,10 +260,10 @@ class ClasificadorVecinosProximos(Clasificador):
         for i in range(0, len(datos)):
             k = 0
             for j in range(0, len(nominalAtributos) - 1):
-                if nominalAtributos[i] is False:
+                if nominalAtributos[j] is False:
                     dato[k] = (datos[i][j] - media[k])/desv[k]
                     k += 1
-            dato.append(datos[len(nominalAtributos - 1)])
+            dato.append(datos[len(nominalAtributos) - 1])
             datos_norm[i] = dato[:]
         return np.array(datos_norm)
         
@@ -268,8 +273,7 @@ class ClasificadorVecinosProximos(Clasificador):
     
     # TODO: implementar
     def clasifica(self, datostest, atributosDiscretos, diccionario=None):
-        resultado = []
-        tabla = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        resultado = [[], [], [], [], [], [], [], [], [], [], [], []]
         datos = self.normalizarDatos(datostest, atributosDiscretos)
         euclid = []
         manhatt = []
@@ -293,9 +297,9 @@ class ClasificadorVecinosProximos(Clasificador):
             euclid_ind = np.argsort(euclid[i])
             manhatt_ind = np.argsort(manhatt[i])
             mahalan_ind = np.argsort(mahalan[i])
-            tabla[0][0] = self.datos[euclid_ind[0]][-1]
-            tabla[0][1] = self.datos[manhatt_ind[0]][-1]
-            tabla[0][2] = self.datos[mahalan_ind[0]][-1]
+            resultado[0].append(self.datos[euclid_ind[0]][-1])
+            resultado[1].append(self.datos[manhatt_ind[0]][-1])
+            resultado[2].append(self.datos[mahalan_ind[0]][-1])
             
             euclid_list = []
             manhatt_list = []
@@ -304,24 +308,23 @@ class ClasificadorVecinosProximos(Clasificador):
                 euclid_list.append(self.datos[euclid_ind[j]][-1])
                 manhatt_list.append(self.datos[manhatt_ind[j]][-1])
                 mahalan_list.append(self.datos[mahalan_ind[j]][-1])
-                tabla[1][0] = Counter(euclid_list).most_common(1)[0][0]
-                tabla[1][1] = Counter(manhatt_list).most_common(1)[0][0]
-                tabla[1][2] = Counter(mahalan_list).most_common(1)[0][0]
+                resultado[3].append(Counter(euclid_list).most_common(1)[0][0])
+                resultado[4].append(Counter(manhatt_list).most_common(1)[0][0])
+                resultado[5].append(Counter(mahalan_list).most_common(1)[0][0])
             for j in range(5, 11):
                 euclid_list.append(self.datos[euclid_ind[j]][-1])
                 manhatt_list.append(self.datos[manhatt_ind[j]][-1])
                 mahalan_list.append(self.datos[mahalan_ind[j]][-1])
-                tabla[2][0] = Counter(euclid_list).most_common(1)[0][0]
-                tabla[2][1] = Counter(manhatt_list).most_common(1)[0][0]
-                tabla[2][2] = Counter(mahalan_list).most_common(1)[0][0]
+                resultado[6].append(Counter(euclid_list).most_common(1)[0][0])
+                resultado[7].append(Counter(manhatt_list).most_common(1)[0][0])
+                resultado[8].append(Counter(mahalan_list).most_common(1)[0][0])
             for j in range(11, 21):
                 euclid_list.append(self.datos[euclid_ind[j]][-1])
                 manhatt_list.append(self.datos[manhatt_ind[j]][-1])
                 mahalan_list.append(self.datos[mahalan_ind[j]][-1])
-                tabla[3][0] = Counter(euclid_list).most_common(1)[0][0]
-                tabla[3][1] = Counter(manhatt_list).most_common(1)[0][0]
-                tabla[3][2] = Counter(mahalan_list).most_common(1)[0][0]
-            resultado.append(tabla[:])
+                resultado[9].append(Counter(euclid_list).most_common(1)[0][0])
+                resultado[10].append(Counter(manhatt_list).most_common(1)[0][0])
+                resultado[11].append(Counter(mahalan_list).most_common(1)[0][0])
         return resultado
 
 
@@ -329,24 +332,31 @@ class ClasificadorVecinosProximos(Clasificador):
 class ClasificadorRegresionLogistica(Clasificador):
     w = []
     
+    @staticmethod
+    def sigmuoidal(x):
+        if x < 0:
+            return 1 - 1 / (1 + exp(x))
+        else:
+            return 1 / (1 + exp(-x))
+        
     def probClass(self, x):
         prod = 0
         for i in range(0, len(self.w)):
             prod += self.w[i] * x[i]
-        return 1 / (1 + exp(0 - prod))
+        return self.sigmuoidal(prod)
         
     def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None):
         w = []
         index_discretos = np.where(atributosDiscretos[:-1] == 1)
-        datos = np.delete(datostrain, index_discretos, axis=1)
+        datos = np.delete(datostrain, index_discretos, axis=-1)
         for i in range(0, len(datos[0])):
             w.append(np.random.rand() - 0.5)
-        for i in range(0, 1):
+        for i in range(0, 100):
             for j in range(0, len(datos)):
                 prod = 0
                 for k in range(0, len(w)):
                     prod += w[k]*datos[j][k]
-                sigma = 1 / (1 + exp(0 - prod))
+                sigma = self.sigmuoidal(prod)
                 value_to_vary = 1 * (sigma - datos[j][-1])
                 for k in range(0, len(w)):
                     x = value_to_vary * datos[j][k]
@@ -356,13 +366,13 @@ class ClasificadorRegresionLogistica(Clasificador):
     def clasifica(self, datostest, atributosDiscretos, diccionario=None):
         index_discretos = np.where(atributosDiscretos[:-1] == 1)
         datos = np.delete(datostest, index_discretos, axis=1)
-        result = []
+        result = [[]]
         for dato in datos:
             x = dato[:-1]
-            x.append(0)
-            probC0 = self.probClass(x)
-            if probC0 >= 0.5:
-                result.append(0)
+            x = np.append(x, 1)
+            probC1 = self.probClass(x)
+            if probC1 >= 0.5:
+                result[0].append(1)
             else:
-                result.append(1)
+                result[0].append(0)
         return result

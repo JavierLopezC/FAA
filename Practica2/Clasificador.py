@@ -263,7 +263,7 @@ class ClasificadorVecinosProximos(Clasificador):
                 if nominalAtributos[j] is False:
                     dato[k] = (datos[i][j] - media[k])/desv[k]
                     k += 1
-            dato.append(datos[len(nominalAtributos) - 1])
+            dato[-1] = datos[i][len(nominalAtributos) - 1]
             datos_norm[i] = dato[:]
         return np.array(datos_norm)
         
@@ -290,7 +290,16 @@ class ClasificadorVecinosProximos(Clasificador):
                     sum_manhatt += abs(datos[i][j] - trained[j])
                 euclid[i].append(sqrt(sum_euclid))
                 manhatt[i].append(sum_manhatt)
-                cov = np.cov(np.stack((datos[i], trained), axis=-1))
+                mat = np.stack((datos[i][:-1], trained[:-1]), axis=-1)
+                cov = np.cov(mat)
+                #print(cov)
+                #print(np.linalg.det(cov))
+                for j in range(0, len(cov)):
+                    for k in range(0, len(cov[0])):
+                        if j != k:
+                            cov[j][k] = 0
+                #print(cov)
+                #print(np.linalg.det(cov))
                 inv_cov = np.linalg.inv(cov)
                 mahalan[i].append(mahalanobis(datos[i][:-1], trained[:-1], inv_cov))
         for i in range(0, len(datos)):
@@ -308,23 +317,23 @@ class ClasificadorVecinosProximos(Clasificador):
                 euclid_list.append(self.datos[euclid_ind[j]][-1])
                 manhatt_list.append(self.datos[manhatt_ind[j]][-1])
                 mahalan_list.append(self.datos[mahalan_ind[j]][-1])
-                resultado[3].append(Counter(euclid_list).most_common(1)[0][0])
-                resultado[4].append(Counter(manhatt_list).most_common(1)[0][0])
-                resultado[5].append(Counter(mahalan_list).most_common(1)[0][0])
+            resultado[3].append(Counter(euclid_list).most_common(1)[0][0])
+            resultado[4].append(Counter(manhatt_list).most_common(1)[0][0])
+            resultado[5].append(Counter(mahalan_list).most_common(1)[0][0])
             for j in range(5, 11):
                 euclid_list.append(self.datos[euclid_ind[j]][-1])
                 manhatt_list.append(self.datos[manhatt_ind[j]][-1])
                 mahalan_list.append(self.datos[mahalan_ind[j]][-1])
-                resultado[6].append(Counter(euclid_list).most_common(1)[0][0])
-                resultado[7].append(Counter(manhatt_list).most_common(1)[0][0])
-                resultado[8].append(Counter(mahalan_list).most_common(1)[0][0])
+            resultado[6].append(Counter(euclid_list).most_common(1)[0][0])
+            resultado[7].append(Counter(manhatt_list).most_common(1)[0][0])
+            resultado[8].append(Counter(mahalan_list).most_common(1)[0][0])
             for j in range(11, 21):
                 euclid_list.append(self.datos[euclid_ind[j]][-1])
                 manhatt_list.append(self.datos[manhatt_ind[j]][-1])
                 mahalan_list.append(self.datos[mahalan_ind[j]][-1])
-                resultado[9].append(Counter(euclid_list).most_common(1)[0][0])
-                resultado[10].append(Counter(manhatt_list).most_common(1)[0][0])
-                resultado[11].append(Counter(mahalan_list).most_common(1)[0][0])
+            resultado[9].append(Counter(euclid_list).most_common(1)[0][0])
+            resultado[10].append(Counter(manhatt_list).most_common(1)[0][0])
+            resultado[11].append(Counter(mahalan_list).most_common(1)[0][0])
         return resultado
 
 

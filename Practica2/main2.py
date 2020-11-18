@@ -50,38 +50,96 @@ def main():
 	
 	#######################################################################################################################
 	
-	#print("\nValidación Simple K-NN")
-	#print("\nValidando 100 veces con clasificador propio:")
-	#knn = ClasificadorVecinosProximos()
-	#vs = ValidacionSimple()
-	#error = Clasificador.validacion(vs, diabetes, knn)
-	#print("Error medio: " + str(error))
-	
-	#print("\nValidacion Cruzada K-NN")
-	#print("\nValidando con clasificador propio:")
-	#knn = ClasificadorVecinosProximos()
-	#vc = ValidacionCruzada()
-	#error = Clasificador.validacion(vc, diabetes, knn)
-	#print("Error medio: " + str(error))
-	
-	#######################################################################################################################
-	
-	print("\nValidación Simple Regresión Logística")
+	print("\nValidación Simple K-NN")
 	print("\nValidando 100 veces con clasificador propio:")
-	reg = ClasificadorRegresionLogistica()
+	knn = ClasificadorVecinosProximos()
 	vs = ValidacionSimple()
-	error = Clasificador.validacion(vs, diabetes, reg)
+	error = Clasificador.validacion(vs, diabetes, knn)
 	print("Error medio: " + str(error))
 	
-	print("\nValidacion Cruzada Regresión Logística")
+	print("\nValidacion Cruzada K-NN")
 	print("\nValidando con clasificador propio:")
-	reg = ClasificadorRegresionLogistica()
+	knn = ClasificadorVecinosProximos()
 	vc = ValidacionCruzada()
-	error = Clasificador.validacion(vc, diabetes, reg)
+	error = Clasificador.validacion(vc, diabetes, knn)
 	print("Error medio: " + str(error))
 	
 	#######################################################################################################################
 	
+	#print("\nValidación Simple Regresión Logística")
+	#print("\nValidando 100 veces con clasificador propio:")
+	#reg = ClasificadorRegresionLogistica()
+	#vs = ValidacionSimple()
+	#error = Clasificador.validacion(vs, diabetes, reg)
+	#print("Error medio: " + str(error))
+	
+	#print("\nValidacion Cruzada Regresión Logística")
+	#print("\nValidando con clasificador propio:")
+	#reg = ClasificadorRegresionLogistica()
+	#vc = ValidacionCruzada()
+	#error = Clasificador.validacion(vc, diabetes, reg)
+	#print("Error medio: " + str(error))
+	
+	#######################################################################################################################
+	
+	print("Wdbc:\n")
+	print("nominalAtributos:")
+	print(wdbc.nominalAtributos)
+	print("\nDiccionario:")
+	print(wdbc.diccionario)
+	print("\nDatos:")
+	print(wdbc.datos)
+	
+	print("\n\nWdbc:")
+	# print("\nValidación Simple NB")
+	
+	# print("\nValidando 100 veces con clasificador propio:")
+	# nb = ClasificadorNaiveBayes()
+	# vs = ValidacionSimple()
+	# error = Clasificador.validacion(vs, wdbc, nb)
+	# print("Error medio: " + str(error))
+	
+	# print("\nValidacion Cruzada NB")
+	# print("\nValidando con clasificador propio:")
+	# nb = ClasificadorNaiveBayes()
+	# vc = ValidacionCruzada()
+	# error = Clasificador.validacion(vc, wdbc, nb)
+	# print("Error medio: " + str(error))
+	
+	#######################################################################################################################
+	
+	print("\nValidación Simple K-NN")
+	print("\nValidando 100 veces con clasificador propio:")
+	knn = ClasificadorVecinosProximos()
+	vs = ValidacionSimple()
+	error = Clasificador.validacion(vs, wdbc, knn)
+	print("Error medio: " + str(error))
+	
+	print("\nValidacion Cruzada K-NN")
+	print("\nValidando con clasificador propio:")
+	knn = ClasificadorVecinosProximos()
+	vc = ValidacionCruzada()
+	error = Clasificador.validacion(vc, wdbc, knn)
+	print("Error medio: " + str(error))
+
+
+#######################################################################################################################
+
+# print("\nValidación Simple Regresión Logística")
+# print("\nValidando 100 veces con clasificador propio:")
+# reg = ClasificadorRegresionLogistica()
+# vs = ValidacionSimple()
+# error = Clasificador.validacion(vs, wdbc, reg)
+# print("Error medio: " + str(error))
+
+# print("\nValidacion Cruzada Regresión Logística")
+# print("\nValidando con clasificador propio:")
+# reg = ClasificadorRegresionLogistica()
+# vc = ValidacionCruzada()
+# error = Clasificador.validacion(vc, wdbc, reg)
+# print("Error medio: " + str(error))
+
+#######################################################################################################################
 
 if __name__ == '__main__':
 	main()

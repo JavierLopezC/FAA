@@ -249,7 +249,7 @@ def main():
 				mahalan_21_fpr = fpr
 			print('(' + str(fpr) + ', ' + str(tpr) + ')')
 	
-	# Representar puntos
+		# Representar puntos
 	
 	####################################################################################################################
 	

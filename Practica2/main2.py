@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # coding: utf-8
+import sklearn
 from Datos import Datos
 from sklearn import preprocessing
 from sklearn.compose import ColumnTransformer
@@ -44,19 +45,12 @@ def main():
 	Y = diabetes.datos[:, -1]
 
 	encAtributos2 = ColumnTransformer([("wdbc", OneHotEncoder(), [0])], remainder="passthrough")
-	X2 = encAtributos.fit_transform(wdbc.datos[:, :-1])
+	X2 = encAtributos2.fit_transform(wdbc.datos[:, :-1])
 	Y2 = wdbc.datos[:, -1]
 
 	#estrategia = EstrategiaParticionado.ValidacionCruzada()
 	
 	print("\n\nDiabetes:")
-	#print("\nValidación Simple NB")
-	
-	#print("\nValidando 100 veces con clasificador propio:")
-	#nb = ClasificadorNaiveBayes()
-	#vs = ValidacionSimple()
-	#error = Clasificador.validacion(vs, diabetes, nb)
-	#print("Error medio: " + str(error))
 	
 	#print("\nValidacion Cruzada NB")
 	#print("\nValidando con clasificador propio:")
@@ -96,6 +90,13 @@ def main():
 	error_std_sk3M = score3M.std()
 	print("Error medio sklearn manhattan: " + str(error_media_sk3M))
 	print("Score medio sklearn manhattan: " + str(error_std_sk3M))
+	
+	clf3Mahalan = KNeighborsClassifier(n_neighbors=3, p=2, metric='mahalanobis', metric_params={'V': np.cov(X, Y)})
+	score3Mahalan = cross_val_score(clf3Mahalan, X, Y, cv=10, n_jobs=-1)
+	error_media_sk3Mahalan = 1 - score3Mahalan.mean()
+	error_std_sk3Mahalan = score3Mahalan.std()
+	print("Error medio sklearn mahalanobis: " + str(error_media_sk3Mahalan))
+	print("Score medio sklearn mahalanobis: " + str(error_std_sk3Mahalan))
 
 
 	print("\nK = 5\n")

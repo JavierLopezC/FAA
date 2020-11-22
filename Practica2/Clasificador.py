@@ -278,6 +278,9 @@ class ClasificadorVecinosProximos(Clasificador):
         euclid = []
         manhatt = []
         mahalan = []
+        mat = np.concatenate((datos[:, :-1], self.datos[:, :-1]))
+        cov = np.cov(np.transpose(mat))
+        inv_cov = np.linalg.inv(cov)
         for i in range(0, len(datos)):
             euclid.append([])
             manhatt.append([])
@@ -290,17 +293,6 @@ class ClasificadorVecinosProximos(Clasificador):
                     sum_manhatt += abs(datos[i][j] - trained[j])
                 euclid[i].append(sqrt(sum_euclid))
                 manhatt[i].append(sum_manhatt)
-                mat = np.stack((datos[i][:-1], trained[:-1]), axis=-1)
-                cov = np.cov(mat)
-                #print(cov)
-                #print(np.linalg.det(cov))
-                for j in range(0, len(cov)):
-                    for k in range(0, len(cov[0])):
-                        if j != k:
-                            cov[j][k] = 0
-                #print(cov)
-                #print(np.linalg.det(cov))
-                inv_cov = np.linalg.inv(cov)
                 mahalan[i].append(mahalanobis(datos[i][:-1], trained[:-1], inv_cov))
         for i in range(0, len(datos)):
             euclid_ind = np.argsort(euclid[i])

@@ -47,10 +47,10 @@ class Clasificador:
     @staticmethod
     # Realiza una clasificacion utilizando una estrategia de particionado determinada
     # TODO: implementar esta funcion
-    def validacion(particionado, dataset, clasificador, seed=None):
+    def validacion(particionado, dataset, clasificador, seed=None, args=None):
         # Creamos las particiones siguiendo la estrategia llamando a particionado.creaParticiones
         if isinstance(particionado, ValidacionSimple):
-            for i in range(0, 100):
+            for i in range(0, 5):
                 particionado.creaParticiones(dataset.datos, seed=seed)
         elif isinstance(particionado, ValidacionCruzada):
             particionado.creaParticiones(dataset.datos, seed=seed)
@@ -62,7 +62,7 @@ class Clasificador:
         for particion in particiones:
             error = []
             clasificador.entrenamiento(dataset.extraeDatos(particion.indicesTrain),
-                                       dataset.nominalAtributos, dataset.diccionario)
+                                       dataset.nominalAtributos, dataset.diccionario, args=args)
             pred = clasificador.clasifica(dataset.extraeDatos(particion.indicesTest),
                                           dataset.nominalAtributos, dataset.diccionario)
             for prediction in pred:
@@ -102,7 +102,7 @@ class ClasificadorNaiveBayes(Clasificador):
     clase_probs_lap = []
     
     # TODO: implementar
-    def entrenamiento(self, datostrain, atributosDiscretos, diccionario):
+    def entrenamiento(self, datostrain, atributosDiscretos, diccionario, args=None):
         self.clase_tabla = []
         self.clase_probs = []
         self.clase_tabla_lap = []
@@ -270,7 +270,7 @@ class ClasificadorVecinosProximos(Clasificador):
         return np.array(datos_norm)
         
     # TODO: implementar
-    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None):
+    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, args=None):
         self.datos = self.normalizarDatos(datostrain, atributosDiscretos)
     
     # TODO: implementar
@@ -348,7 +348,7 @@ class ClasificadorRegresionLogistica(Clasificador):
             prod += self.w[i] * x[i]
         return self.sigmuoidal(prod)
         
-    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None):
+    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, args=None):
         w = []
         index_discretos = np.where(atributosDiscretos[:-1] == 1)
         datos = np.delete(datostrain, index_discretos, axis=-1)
@@ -420,7 +420,7 @@ class ClasificadorGenetico(Clasificador):
             individuo += str(choice(2))
         return individuo
     
-    def generaPoblacion(self, diccionario, initial_max=5 , pobl_size=50):
+    def generaPoblacion(self, diccionario, initial_max=3, pobl_size=50):
         counter = 0
         for key in diccionario:
             if key == "Class":
@@ -428,9 +428,11 @@ class ClasificadorGenetico(Clasificador):
                 continue
             for _ in diccionario[key]:
                 counter += 1
+        print("FINAL: " + str(counter))
 
         self.tam_regla = counter
-        counter *= choice(initial_max)
+        counter *= choice(initial_max) + 1
+        print("CONTADOR: " + str(counter))
         self.poblacion = []
         for _ in range(0, pobl_size):
             individuo = self.generaIndividuo(counter)
@@ -444,7 +446,7 @@ class ClasificadorGenetico(Clasificador):
         return hijo1, hijo2
         
     def cruce(self, padre1, padre2, prob=0.5):
-        decision = choice([1,0], p=[prob, 1-prob])
+        decision = choice([1, 0], p=[prob, 1-prob])
         if decision == 0:
             return padre1, padre2
         ptos_cruce = choice([1, 2, 3])
@@ -459,9 +461,13 @@ class ClasificadorGenetico(Clasificador):
             if decision == 1:
                 gen = choice(len(nueva_gen[i]))
                 if nueva_gen[i][gen] == '1':
-                    nueva_gen[i][gen] = '0'
+                    aux = list(nueva_gen[i])
+                    aux[gen] = '0'
+                    nueva_gen[i] = "".join(aux)
                 else:
-                    nueva_gen[i][gen] = '1'
+                    aux = list(nueva_gen[i])
+                    aux[gen] = '1'
+                    nueva_gen[i] = "".join(aux)
         return nueva_gen
 
     @staticmethod
@@ -505,7 +511,6 @@ class ClasificadorGenetico(Clasificador):
     
     def standarizeFits(self):
         total = np.sum(self.fits)
-        count = 0
         for i in range(0, len(self.fits)):
             self.fits[i] /= total
             
@@ -514,13 +519,13 @@ class ClasificadorGenetico(Clasificador):
         return parent1, parent2
     
     def selectBest(self, amount):
-        indices = np.argsort(self.fits)[::-1]
+        indices = np.argsort(self.fits)[-amount:]
         res = []
         for i in range (0, amount):
             res.append(self.poblacion[indices[i]])
         return res
         
-    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, epocas=100, pob_size=50, prob_mut=10, prob_cruce=50, max=5):
+    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, args=None):
         if not diccionario:
             raise ValueError("Datos no válidos para clasificador genético.")
 
@@ -528,39 +533,54 @@ class ClasificadorGenetico(Clasificador):
             if atr == 0:
                 raise ValueError("Datos no válidos para clasificador genético.")
 
+        if not args:
+            epocas = 100
+            pob_size = 50
+            prob_mut = 0.1
+            prob_cruce = 0.5
+            max_reg = 3
+        else:
+            epocas = args["epocas"]
+            pob_size = args["pob_size"]
+            prob_mut = args["prob_mutacion"]
+            prob_cruce = args["prob_cruce"]
+            max_reg = args["max"]
+
         seed(datetime.now().microsecond)
 
         datostrain_norm = self.normalizaDatos(datostrain, diccionario)
 
-        self.generaPoblacion(diccionario, initial_max=max, pobl_size=pob_size)
+        self.generaPoblacion(diccionario, initial_max=max_reg, pobl_size=pob_size)
 
         elite_number = ceil(float(pob_size * 5) / 100)
         
         for __ in range(0, epocas):
             self.fits = []
             for individuo in self.poblacion:
-                self.fits.append(fit(datostrain_norm, individuo))
+                self.fits.append(self.fit(datostrain_norm, individuo))
                 
             self.standarizeFits()
 
             nueva_gen = self.selectBest(elite_number)
                 
             for i in range(0, (pob_size - elite_number) // 2):
-                parent1, parent2 = self.fitSelect()
+                padre1, padre2 = self.fitSelect()
                 hijo1, hijo2 = self.cruce(padre1, padre2, prob=prob_cruce)
                 nueva_gen.append(hijo1)
                 nueva_gen.append(hijo2)
                 
             if len(nueva_gen) < pob_size:
-                parent1, parent2 = self.fitSelect()
-                hijo1, hijo2 = self.cruce(padre1, padre2)
+                padre1, padre2 = self.fitSelect()
+                hijo1, hijo2 = self.cruce(padre1, padre2, prob=prob_cruce)
                 nueva_gen.append(choice([hijo1, hijo2]))
 
             nueva_gen = self.mutacion(nueva_gen, prob=prob_mut)
 
             self.poblacion = nueva_gen
-
-        self.best = self.selectBest(1)
+        self.fits = []
+        for individuo in self.poblacion:
+            self.fits.append(self.fit(datostrain_norm, individuo))
+        self.best = self.selectBest(1)[0]
 
     def clasifica(self, datostest, atributosDiscretos, diccionario=None):
         if not diccionario:
@@ -570,9 +590,9 @@ class ClasificadorGenetico(Clasificador):
             if atr == 0:
                 raise ValueError("Datos no válidos para clasificador genético.")
 
-        datostest_norm = normalizaDatos(datostrain, diccionario)
+        datostest_norm = self.normalizaDatos(datostest, diccionario)
         pred = []
         for dato in datostest_norm:
-            pred.append(int(predict(dato, self.best)))
+            pred.append(int(self.predict(dato, self.best)))
 
-        return pred
+        return [pred]

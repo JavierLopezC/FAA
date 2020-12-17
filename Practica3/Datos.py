@@ -7,15 +7,20 @@ import numpy as np
 
 class Datos:
     # TODO: procesar el fichero para asignar correctamente las variables nominalAtributos, datos y diccionario
-    def __init__(self, nombreFichero):
-        data = pd.read_csv(nombreFichero, header=0)
+    def __init__(self, nombreFichero, allNominal=False):
+        if allNominal:
+            data = pd.read_csv(nombreFichero, dtype=str, header=0)
+        else:
+            data = pd.read_csv(nombreFichero, header=0)
         data["Class"] = data["Class"].astype(str)
         columns = data.columns
         nominalAtributos = []
         diccionario = {}
         for i in range(0, len(columns)):
             values = data[columns[i]]
-            if i == (len(columns) - 1):
+            if allNominal:
+                nominalAtributos.append(True)
+            elif i == (len(columns) - 1):
                 nominalAtributos.append(True)
             elif np.issubdtype(values.dtype, np.integer) or np.issubdtype(values.dtype, np.floating):
                 nominalAtributos.append(False)

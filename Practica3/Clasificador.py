@@ -4,7 +4,7 @@
 from abc import ABCMeta, abstractmethod
 from EstrategiaParticionado import ValidacionSimple, ValidacionCruzada
 from Datos import Datos
-from math import sqrt, exp
+from math import sqrt, exp, ceil
 from scipy.stats import norm
 from scipy.spatial.distance import mahalanobis
 import numpy as np
@@ -82,7 +82,7 @@ class Clasificador:
         # y obtenemos el error en la particion test. Otra opción es repetir la validación simple un número especificado
         # de veces, obteniendo en cada una un error. Finalmente se calcularía la media.
         
-        #elif isinstance(particionado, ValidacionSimple):
+        # elif isinstance(particionado, ValidacionSimple):
         #    clasificador.entrenamiento(dataset.extraeDatos(particiones[0].indicesTrain),
         #                               dataset.nominalAtributos, dataset.diccionario)
         #    pred = clasificador.clasifica(dataset.extraeDatos(particiones[0].indicesTest), dataset.nominalAtributos,
@@ -90,7 +90,7 @@ class Clasificador:
         #    error = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[0])
         #    error_lap = Clasificador.error(dataset.extraeDatos(particiones[0].indicesTest), pred[1])
         #    return error, error_lap
-        #else:
+        # else:
         #    raise ValueError("Particionado no válido.")
      
         
@@ -383,11 +383,13 @@ class ClasificadorRegresionLogistica(Clasificador):
 
 ########################################################################################################################
 class ClasificadorGenetico(Clasificador):
-    self.tam_regla = 0
-    self.poblacion = []
-    self.best = ""
-
-    def normalizaDatos(self, dataset, diccionario):
+    tam_regla = 0
+    poblacion = []
+    fits = []
+    best = ""
+    
+    @staticmethod
+    def normalizaDatos(dataset, diccionario):
         datos_norm = []
         atrib_counts = []
         for key in diccionario:
@@ -418,7 +420,7 @@ class ClasificadorGenetico(Clasificador):
             individuo += str(choice(2))
         return individuo
     
-    def generaPoblacion(self, diccionario, pobl_size=50):
+    def generaPoblacion(self, diccionario, initial_max=5 , pobl_size=50):
         counter = 0
         for key in diccionario:
             if key == "Class":
@@ -428,40 +430,39 @@ class ClasificadorGenetico(Clasificador):
                 counter += 1
 
         self.tam_regla = counter
-        counter *= choice([1, 2, 3, 4, 5])
+        counter *= choice(initial_max)
         self.poblacion = []
         for _ in range(0, pobl_size):
-            individuo = generaIndividuo(counter)
+            individuo = self.generaIndividuo(counter)
             self.poblacion.append(individuo)
     
-    def cruce(self, padre1, padre2):
+    def cruce_1_pto(self, padre1, padre2):
         pto_cruce1 = choice(len(padre1))
-        pto_cruce2 = choice(len(padre2) / self.tam_regla) + (pto_cruce1 % self.tam_regla)
+        pto_cruce2 = choice(len(padre2)//self.tam_regla) * self.tam_regla + (pto_cruce1 % self.tam_regla)
         hijo1 = padre1[:pto_cruce1] + padre2[pto_cruce2:]
         hijo2 = padre2[:pto_cruce2] + padre1[pto_cruce1:]
         return hijo1, hijo2
         
-    def crucePobl(self):
-        nueva_gen = []
-        for padre1 in self.poblacion:
-            for padre2 in self.poblacion:
-                hijo1, hijo2 = cruce(padre1, padre2);
-                nueva_gen.append(hijo1)
-                nueva_gen.append(hijo2)
-        return nueva_gen
-    
+    def cruce(self, padre1, padre2, prob=0.5):
+        decision = choice([1,0], p=[prob, 1-prob])
+        if decision == 0:
+            return padre1, padre2
+        ptos_cruce = choice([1, 2, 3])
+        for i in range(0, ptos_cruce):
+            padre1, padre2 = self.cruce_1_pto(padre1, padre2)
+        return padre1, padre2
+        
     @staticmethod
-    def mutacion(nueva_gen, porcentaje=10):
+    def mutacion(nueva_gen, prob=0.1):
         for i in range(0, len(nueva_gen)):
-            decision = choice(100)
-            if decision < porcentaje:
+            decision = choice([1, 0], p=[prob, 1-prob])
+            if decision == 1:
                 gen = choice(len(nueva_gen[i]))
                 if nueva_gen[i][gen] == '1':
                     nueva_gen[i][gen] = '0'
                 else:
                     nueva_gen[i][gen] = '1'
         return nueva_gen
-
 
     @staticmethod
     def eval_regla(regla, dato):
@@ -478,7 +479,7 @@ class ClasificadorGenetico(Clasificador):
         clase0 = 0
         clase1 = 0
         while i < len(reglas):
-            ret = eval_regla(reglas[i : (i + self.tam_regla)], dato)
+            ret = self.eval_regla(reglas[i: (i + self.tam_regla)], dato)
             if ret == '0':
                 clase0 += 1
             else:
@@ -494,39 +495,32 @@ class ClasificadorGenetico(Clasificador):
         total = 0
         aciertos = 0
         for dato in datostrain:
-            pred = predict(dato, reglas)
+            pred = self.predict(dato, reglas)
             if pred == dato[-1]:
                 aciertos += 1
 
             total += 1
 
         return float(aciertos)/total
-
-    @staticmethod
-    def fitSelect(fits, new_gen, number):
-        total = np.sum(fits)
+    
+    def standarizeFits(self):
+        total = np.sum(self.fits)
         count = 0
-        selected = []
-        for i in range(0, len(fits)):
-            fits[i] /= total
-            while fits[i] >= 1:
-                selected.append(new_gen[i])
-                count += 1
-                fits[i] -= 1
-
-        last_select = np.sort(fits)[::-1]
-        last_select = last_select[:(number - count)]
-        for fit in last_select:
-            for i in range (0, len(fits)):
-                if fits[i] == fit:
-                    selected.append(new_gen[i])
-                    count += 1
-                    if count == number:
-                        return selected
-        raise ValueError("Error en fitSelect.")
-
-
-    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, epocas=100, pob_size=50, prob_mut=10):
+        for i in range(0, len(self.fits)):
+            self.fits[i] /= total
+            
+    def fitSelect(self):
+        parent1, parent2 = choice(self.poblacion, 2, replace=True, p=self.fits)
+        return parent1, parent2
+    
+    def selectBest(self, amount):
+        indices = np.argsort(self.fits)[::-1]
+        res = []
+        for i in range (0, amount):
+            res.append(self.poblacion[indices[i]])
+        return res
+        
+    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, epocas=100, pob_size=50, prob_mut=10, prob_cruce=50, max=5):
         if not diccionario:
             raise ValueError("Datos no válidos para clasificador genético.")
 
@@ -536,35 +530,37 @@ class ClasificadorGenetico(Clasificador):
 
         seed(datetime.now().microsecond)
 
-        datostrain_norm = normalizaDatos(datostrain, diccionario)
+        datostrain_norm = self.normalizaDatos(datostrain, diccionario)
 
-        generaPoblacion(diccionario, pob_size)
+        self.generaPoblacion(diccionario, initial_max=max, pobl_size=pob_size)
 
-        for __ in range (0, epocas):
-            nueva_gen = crucePobl()
-            nueva_gen = mutacion(nueva_gen, porcentaje=prob_mut)
+        elite_number = ceil(float(pob_size * 5) / 100)
+        
+        for __ in range(0, epocas):
+            self.fits = []
+            for individuo in self.poblacion:
+                self.fits.append(fit(datostrain_norm, individuo))
+                
+            self.standarizeFits()
 
-            fits = []
-            for individuo in nueva_gen:
-                fits.append(fit(datostrain_norm, individuo))
+            nueva_gen = self.selectBest(elite_number)
+                
+            for i in range(0, (pob_size - elite_number) // 2):
+                parent1, parent2 = self.fitSelect()
+                hijo1, hijo2 = self.cruce(padre1, padre2, prob=prob_cruce)
+                nueva_gen.append(hijo1)
+                nueva_gen.append(hijo2)
+                
+            if len(nueva_gen) < pob_size:
+                parent1, parent2 = self.fitSelect()
+                hijo1, hijo2 = self.cruce(padre1, padre2)
+                nueva_gen.append(choice([hijo1, hijo2]))
 
-            elite_number = (pob_size * 5) // 100
-
-            nueva_gen = fitSelect(fits, nueva_gen, pob_size - elite_number)
-
-            for _ in range (0, elite_number):
-                nueva_gen.append(choice(self.poblacion))
+            nueva_gen = self.mutacion(nueva_gen, prob=prob_mut)
 
             self.poblacion = nueva_gen
 
-        best_fit = 0
-        for i in raneg(0, len(self.poblacion)):
-            current_fit = fit(datostrain_norm, self.poblacion[i])
-            if current_fit > best_fit:
-                best_fit = current_fit
-                best_index = i
-
-        self.best = self.poblacion[best_index]
+        self.best = self.selectBest(1)
 
     def clasifica(self, datostest, atributosDiscretos, diccionario=None):
         if not diccionario:

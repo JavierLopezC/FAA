@@ -385,6 +385,31 @@ class ClasificadorRegresionLogistica(Clasificador):
 class ClasificadorGenetico(Clasificador):
     self.tam_regla = 0
     self.poblacion = []
+    self.best = ""
+
+    def normalizaDatos(self, dataset, diccionario):
+        datos_norm = []
+        atrib_counts = []
+        for key in diccionario:
+            if key == "Class":
+                atrib_counts.append(1)
+                continue
+            count = 0
+            for _ in diccionario[key]:
+                count += 1
+            atrib_counts.append(count)
+
+        for dato in dataset:
+            dato_norm = ""
+            for i in range(0, len(atrib_counts)-1):
+                for j in range(0, atrib_counts[i]):
+                    if dato[i] == j:
+                        dato_norm += '1'
+                    else:
+                        dato_norm += '0'
+            dato_norm += str(dato[-1])
+            datos_norm.append(dato_norm)
+        return datos_norm
 
     @staticmethod
     def generaIndividuo(size):
@@ -393,33 +418,21 @@ class ClasificadorGenetico(Clasificador):
             individuo += str(choice(2))
         return individuo
     
-    def generaPoblacion(self, atributosDiscretos, diccionario, pobl_size=50):
-        if not diccionario:
-            raise ValueError("Datos no válidos para clasificador genético.")
-        
-        for atr in atributosDiscretos:
-            if atr == 0:
-                raise ValueError("Datos no válidos para clasificador genético.")
-        
+    def generaPoblacion(self, diccionario, pobl_size=50):
         counter = 0
         for key in diccionario:
-            if not diccionario[key]:
-                raise ValueError("Datos no válidos para clasificador genético.")
-            for innerkey in diccionario[key]:
-                if key == "Class":
-                    continue
+            if key == "Class":
                 counter += 1
-        counter += 1
+                continue
+            for _ in diccionario[key]:
+                counter += 1
 
         self.tam_regla = counter
-        
         counter *= choice([1, 2, 3, 4, 5])
         self.poblacion = []
-        for i in range(0, pobl_size):
+        for _ in range(0, pobl_size):
             individuo = generaIndividuo(counter)
             self.poblacion.append(individuo)
-            
-        return
     
     def cruce(self, padre1, padre2):
         pto_cruce1 = choice(len(padre1))
@@ -443,12 +456,127 @@ class ClasificadorGenetico(Clasificador):
             decision = choice(100)
             if decision < porcentaje:
                 gen = choice(len(nueva_gen[i]))
-                nueva_gen[i][gen] = (nueva_gen[i][gen] + 1) % 1
+                if nueva_gen[i][gen] == '1':
+                    nueva_gen[i][gen] = '0'
+                else:
+                    nueva_gen[i][gen] = '1'
         return nueva_gen
-        
-    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None):
+
+
+    @staticmethod
+    def eval_regla(regla, dato):
+        for i in range(0, len(dato) - 1):
+            if (dato[i] == '1') and (regla[i] == '0'):
+                if regla[-1] == '0':
+                    return '1'
+                else:
+                    return '0'
+        return regla[-1]
+
+    def predict(self, dato, reglas):
+        i = 0
+        clase0 = 0
+        clase1 = 0
+        while i < len(reglas):
+            ret = eval_regla(reglas[i : (i + self.tam_regla)], dato)
+            if ret == '0':
+                clase0 += 1
+            else:
+                clase1 += 1
+            i += self.tam_regla
+
+        if clase1 > clase0:
+            return '0'
+        else:
+            return '1'
+
+    def fit(self, datostrain, reglas):
+        total = 0
+        aciertos = 0
+        for dato in datostrain:
+            pred = predict(dato, reglas)
+            if pred == dato[-1]:
+                aciertos += 1
+
+            total += 1
+
+        return float(aciertos)/total
+
+    @staticmethod
+    def fitSelect(fits, new_gen, number):
+        total = np.sum(fits)
+        count = 0
+        selected = []
+        for i in range(0, len(fits)):
+            fits[i] /= total
+            while fits[i] >= 1:
+                selected.append(new_gen[i])
+                count += 1
+                fits[i] -= 1
+
+        last_select = np.sort(fits)[::-1]
+        last_select = last_select[:(number - count)]
+        for fit in last_select:
+            for i in range (0, len(fits)):
+                if fits[i] == fit:
+                    selected.append(new_gen[i])
+                    count += 1
+                    if count == number:
+                        return selected
+        raise ValueError("Error en fitSelect.")
+
+
+    def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, epocas=100, pob_size=50, prob_mut=10):
+        if not diccionario:
+            raise ValueError("Datos no válidos para clasificador genético.")
+
+        for atr in atributosDiscretos:
+            if atr == 0:
+                raise ValueError("Datos no válidos para clasificador genético.")
+
         seed(datetime.now().microsecond)
-        return
-    
+
+        datostrain_norm = normalizaDatos(datostrain, diccionario)
+
+        generaPoblacion(diccionario, pob_size)
+
+        for __ in range (0, epocas):
+            nueva_gen = crucePobl()
+            nueva_gen = mutacion(nueva_gen, porcentaje=prob_mut)
+
+            fits = []
+            for individuo in nueva_gen:
+                fits.append(fit(datostrain_norm, individuo))
+
+            elite_number = (pob_size * 5) // 100
+
+            nueva_gen = fitSelect(fits, nueva_gen, pob_size - elite_number)
+
+            for _ in range (0, elite_number):
+                nueva_gen.append(choice(self.poblacion))
+
+            self.poblacion = nueva_gen
+
+        best_fit = 0
+        for i in raneg(0, len(self.poblacion)):
+            current_fit = fit(datostrain_norm, self.poblacion[i])
+            if current_fit > best_fit:
+                best_fit = current_fit
+                best_index = i
+
+        self.best = self.poblacion[best_index]
+
     def clasifica(self, datostest, atributosDiscretos, diccionario=None):
-        return
+        if not diccionario:
+            raise ValueError("Datos no válidos para clasificador genético.")
+
+        for atr in atributosDiscretos:
+            if atr == 0:
+                raise ValueError("Datos no válidos para clasificador genético.")
+
+        datostest_norm = normalizaDatos(datostrain, diccionario)
+        pred = []
+        for dato in datostest_norm:
+            pred.append(int(predict(dato, self.best)))
+
+        return pred

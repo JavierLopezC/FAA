@@ -50,7 +50,7 @@ class Clasificador:
     def validacion(particionado, dataset, clasificador, seed=None, args=None):
         # Creamos las particiones siguiendo la estrategia llamando a particionado.creaParticiones
         if isinstance(particionado, ValidacionSimple):
-            for i in range(0, 5):
+            for i in range(0, 10):
                 particionado.creaParticiones(dataset.datos, seed=seed)
         elif isinstance(particionado, ValidacionCruzada):
             particionado.creaParticiones(dataset.datos, seed=seed)
@@ -428,13 +428,13 @@ class ClasificadorGenetico(Clasificador):
                 continue
             for _ in diccionario[key]:
                 counter += 1
-        print("FINAL: " + str(counter))
+        print("REGLA: " + str(counter))
 
         self.tam_regla = counter
-        counter *= choice(initial_max) + 1
-        print("CONTADOR: " + str(counter))
+        print("MAX: " + str(self.tam_regla * initial_max))
         self.poblacion = []
         for _ in range(0, pobl_size):
+            counter = self.tam_regla * (choice(initial_max) + 1)
             individuo = self.generaIndividuo(counter)
             self.poblacion.append(individuo)
     

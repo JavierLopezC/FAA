@@ -24,12 +24,12 @@ def main():
     print("\n\nTitanic:")
     print("\nValidación Simple")
     args = {"epocas": 100, "pob_size": 50}
-    prob_cruce = 0
-    prob_mutacion = 0
     best_err = 1
     best_args = {}
     for max_reg in range(1, 11):
+        prob_cruce = 0
         while prob_cruce <= 1:
+            prob_mutacion = 0
             while prob_mutacion <= 1:
                 args["max"] = max_reg
                 args["prob_cruce"] = prob_cruce
@@ -43,6 +43,7 @@ def main():
                     best_args = args
                 prob_mutacion += 0.05
             prob_cruce += 0.05
+            
     print(str(best_args))
 
     f = open("./best_args", "w")

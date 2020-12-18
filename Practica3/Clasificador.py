@@ -67,7 +67,7 @@ class Clasificador:
                                           dataset.nominalAtributos, dataset.diccionario)
             for prediction in pred:
                 error.append(Clasificador.error(dataset.extraeDatos(particion.indicesTest), prediction))
-            print("Error en partición " + str(i) + str(error))
+            # print("Error en partición " + str(i) + str(error))
             if len(totalErr) == 0:
                 totalErr = error[:]
             else:
@@ -428,10 +428,10 @@ class ClasificadorGenetico(Clasificador):
                 continue
             for _ in diccionario[key]:
                 counter += 1
-        print("REGLA: " + str(counter))
+        # print("REGLA: " + str(counter))
 
         self.tam_regla = counter
-        print("MAX: " + str(self.tam_regla * initial_max))
+        # print("MAX: " + str(self.tam_regla * initial_max))
         self.poblacion = []
         for _ in range(0, pobl_size):
             counter = self.tam_regla * (choice(initial_max) + 1)

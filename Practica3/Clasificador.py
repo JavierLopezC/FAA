@@ -536,9 +536,9 @@ class ClasificadorGenetico(Clasificador):
         if not args:
             epocas = 100
             pob_size = 50
-            prob_mut = 0.1
-            prob_cruce = 0.5
-            max_reg = 3
+            prob_mut = 0.9
+            prob_cruce = 0.9
+            max_reg = 5
         else:
             epocas = args["epocas"]
             pob_size = args["pob_size"]

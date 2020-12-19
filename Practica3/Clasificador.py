@@ -11,6 +11,7 @@ import numpy as np
 from numpy.random import seed, choice
 from collections import Counter
 from datetime import datetime
+import matplotlib.pyplot as	plt
 
 
 class Clasificador:
@@ -50,8 +51,7 @@ class Clasificador:
     def validacion(particionado, dataset, clasificador, seed=None, args=None):
         # Creamos las particiones siguiendo la estrategia llamando a particionado.creaParticiones
         if isinstance(particionado, ValidacionSimple):
-            for i in range(0, 10):
-                particionado.creaParticiones(dataset.datos, seed=seed)
+            particionado.creaParticiones(dataset.datos, seed=seed)
         elif isinstance(particionado, ValidacionCruzada):
             particionado.creaParticiones(dataset.datos, seed=seed)
         particiones = particionado.particiones
@@ -67,7 +67,7 @@ class Clasificador:
                                           dataset.nominalAtributos, dataset.diccionario)
             for prediction in pred:
                 error.append(Clasificador.error(dataset.extraeDatos(particion.indicesTest), prediction))
-            # print("Error en partición " + str(i) + str(error))
+            print("Error en partición " + str(i) + str(error))
             if len(totalErr) == 0:
                 totalErr = error[:]
             else:
@@ -387,6 +387,7 @@ class ClasificadorGenetico(Clasificador):
     poblacion = []
     fits = []
     best = ""
+    evol = []
     
     @staticmethod
     def normalizaDatos(dataset, diccionario):
@@ -416,7 +417,7 @@ class ClasificadorGenetico(Clasificador):
     @staticmethod
     def generaIndividuo(size):
         individuo = ""
-        for i in range(0, size):
+        for _ in range(0, size):
             individuo += str(choice(2))
         return individuo
     
@@ -428,10 +429,8 @@ class ClasificadorGenetico(Clasificador):
                 continue
             for _ in diccionario[key]:
                 counter += 1
-        # print("REGLA: " + str(counter))
 
         self.tam_regla = counter
-        # print("MAX: " + str(self.tam_regla * initial_max))
         self.poblacion = []
         for _ in range(0, pobl_size):
             counter = self.tam_regla * (choice(initial_max) + 1)
@@ -524,6 +523,21 @@ class ClasificadorGenetico(Clasificador):
         for i in range (0, amount):
             res.append(self.poblacion[indices[i]])
         return res
+
+    def evolBest(self, datostrain):
+        self.evol.append(self.fit(datostrain, self.best))
+
+    def plotEvol(self, epocas):
+        plt.figure()
+        lw = 2
+        x = np.arange(epocas + 1)
+        plt.plot(x, self.evol, color="darkorange", lw=lw, label="Best fit")
+        plt.xlim([0.0, epocas])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel("epocas")
+        plt.ylabel("fit")
+        plt.title("Evol. best fit")
+        plt.show()
         
     def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, args=None):
         if not diccionario:
@@ -539,12 +553,14 @@ class ClasificadorGenetico(Clasificador):
             prob_mut = 0.9
             prob_cruce = 0.9
             max_reg = 5
+            plot = False
         else:
             epocas = args["epocas"]
             pob_size = args["pob_size"]
             prob_mut = args["prob_mutacion"]
             prob_cruce = args["prob_cruce"]
             max_reg = args["max"]
+            plot = args["plot"]
 
         seed(datetime.now().microsecond)
 
@@ -553,11 +569,17 @@ class ClasificadorGenetico(Clasificador):
         self.generaPoblacion(diccionario, initial_max=max_reg, pobl_size=pob_size)
 
         elite_number = ceil(float(pob_size * 5) / 100)
+
+        self.evol = []
         
         for __ in range(0, epocas):
             self.fits = []
             for individuo in self.poblacion:
                 self.fits.append(self.fit(datostrain_norm, individuo))
+
+            self.best = self.selectBest(1)[0]
+
+            self.evolBest(datostrain_norm)
                 
             self.standarizeFits()
 
@@ -581,6 +603,10 @@ class ClasificadorGenetico(Clasificador):
         for individuo in self.poblacion:
             self.fits.append(self.fit(datostrain_norm, individuo))
         self.best = self.selectBest(1)[0]
+
+        self.evolBest(datostrain_norm)
+        if plot:
+            self.plotEvol(epocas)
 
     def clasifica(self, datostest, atributosDiscretos, diccionario=None):
         if not diccionario:

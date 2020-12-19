@@ -388,6 +388,7 @@ class ClasificadorGenetico(Clasificador):
     fits = []
     best = ""
     evol = []
+    fit_medio = []
     
     @staticmethod
     def normalizaDatos(dataset, diccionario):
@@ -538,6 +539,17 @@ class ClasificadorGenetico(Clasificador):
         plt.ylabel("fit")
         plt.title("Evol. best fit")
         plt.show()
+
+        plt.figure()
+        lw = 2
+        x = np.arange(epocas + 1)
+        plt.plot(x, self.fit_medio, color="darkorange", lw=lw, label="Avg fit")
+        plt.xlim([0.0, epocas])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel("epocas")
+        plt.ylabel("fit")
+        plt.title("Evol. Avg fit")
+        plt.show()
         
     def entrenamiento(self, datostrain, atributosDiscretos, diccionario=None, args=None):
         if not diccionario:
@@ -571,11 +583,18 @@ class ClasificadorGenetico(Clasificador):
         elite_number = ceil(float(pob_size * 5) / 100)
 
         self.evol = []
+        self.fit_medio = []
         
         for __ in range(0, epocas):
             self.fits = []
+            total_fit = 0
             for individuo in self.poblacion:
-                self.fits.append(self.fit(datostrain_norm, individuo))
+                current_fit = self.fit(datostrain_norm, individuo)
+                self.fits.append(current_fit)
+                total_fit += current_fit
+            self.fit_medio.append(total_fit/pob_size)
+
+
 
             self.best = self.selectBest(1)[0]
 
@@ -600,8 +619,12 @@ class ClasificadorGenetico(Clasificador):
 
             self.poblacion = nueva_gen
         self.fits = []
+        total_fit = 0
         for individuo in self.poblacion:
-            self.fits.append(self.fit(datostrain_norm, individuo))
+            current_fit = self.fit(datostrain_norm, individuo)
+            self.fits.append(current_fit)
+            total_fit += current_fit
+        self.fit_medio.append(total_fit / pob_size)
         self.best = self.selectBest(1)[0]
 
         self.evolBest(datostrain_norm)

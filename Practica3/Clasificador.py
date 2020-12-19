@@ -607,6 +607,7 @@ class ClasificadorGenetico(Clasificador):
         self.evolBest(datostrain_norm)
         if plot:
             self.plotEvol(epocas)
+            print("Mejor conjunto de reglas:\n" + self.best)
 
     def clasifica(self, datostest, atributosDiscretos, diccionario=None):
         if not diccionario:
